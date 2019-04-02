@@ -47,12 +47,9 @@
 //
 // Implement on GCC/Clang
 //
-// Test uniformity of the values provided (should be 'good-enough')
+// Performance is not really better than SSE (any improvements, check asm)
 //
-// Test performance against a real, non-intrinsic TEA implementation and
-//  a SIMD random generator (this needs to be the fastest)
-//
-// Prove that 0.0f is a possible return value and 1.0f is not
+// Fix SSE returning 1.0f as a valid value
 //
 // Make it truly header-only
 //

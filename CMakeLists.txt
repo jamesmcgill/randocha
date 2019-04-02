@@ -26,3 +26,10 @@ target_link_libraries(randocha-csv
     PRIVATE randocha fmt-header-only)
 set_target_properties(randocha-csv PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
+  # Distribution visualiser
+add_executable(distribution_viz source/distribution_viz.cpp)
+target_link_libraries(distribution_viz
+    PRIVATE randocha fmt-header-only)
+set_target_properties(distribution_viz PROPERTIES
+  VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
