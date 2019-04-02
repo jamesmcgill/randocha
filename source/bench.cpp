@@ -16,8 +16,8 @@
 // https://www.mathsisfun.com/data/standard-deviation.html
 //
 //------------------------------------------------------------------------------
-static const size_t NUM_ENSEMBLES = 100;
-static const size_t NUM_SAMPLES   = 10000;
+static const size_t NUM_ENSEMBLES = 1000;
+static const size_t NUM_SAMPLES   = 100;
 
 //------------------------------------------------------------------------------
 using Durations     = std::vector<uint64_t>;
@@ -285,9 +285,6 @@ printResults(Results& results)
 void
 printSummary(Results& results)
 {
-  std::cout << "Total number of rounds: " << NUM_ENSEMBLES << "\n";
-
-  std::cout << "\n";
   std::cout << "Benchmark Results:\n";
   std::cout << "==================\n";
   std::cout << "average duration: " << results.avgDuration << "\n"
@@ -297,7 +294,7 @@ printSummary(Results& results)
   std::cout << "Quality of Results:\n";
   std::cout << "===================\n";
   std::cout << "number of outlier rounds removed: " << results.numOutliers
-            << "\n"
+            << " (from " << NUM_ENSEMBLES << ")\n"
             << "average variance: " << results.avgVariance << " (error: +/-"
             << sqrt(results.avgVariance) << " cycles)\n"
             << "absolute max deviation: " << results.maxDeviationRange << "\n"
@@ -325,7 +322,10 @@ main()
     values[3] = 4.0f;
   });
   calculateVarianceInfo(baselineResults);
-  printResults(baselineResults);
+  std::cout << "\n\n";
+  std::cout << "Baseline\n";
+  std::cout << "========\n";
+  // printResults(baselineResults);
   printSummary(baselineResults);
 
   Randocha rand;
@@ -337,7 +337,10 @@ main()
     values[3] = rand.get(3);
   });
   calculateVarianceInfo(randochaResults);
-  printResults(randochaResults);
+  std::cout << "\n\n";
+  std::cout << "Randocha\n";
+  std::cout << "========\n";
+  // printResults(randochaResults);
   printSummary(randochaResults);
 
   assert(
@@ -347,7 +350,10 @@ main()
   Results sseResults = runBenchmark(
     [&randSseGen](ReturnValues& values) { randSseGen.rand_sse(values); });
   calculateVarianceInfo(sseResults);
-  printResults(sseResults);
+  std::cout << "\n\n";
+  std::cout << "SSE\n";
+  std::cout << "========\n";
+  // printResults(sseResults);
   printSummary(sseResults);
 
   assert(
@@ -362,7 +368,10 @@ main()
     values[3] = randTeaGen.getF(3);
   });
   calculateVarianceInfo(teaResults);
-  printResults(teaResults);
+  std::cout << "\n\n";
+  std::cout << "TEA\n";
+  std::cout << "========\n";
+  // printResults(teaResults);
   printSummary(teaResults);
 
   return 0;
