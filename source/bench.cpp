@@ -2,8 +2,11 @@
 #include <vector>
 #include <numeric>
 #include <algorithm>
+#include <cassert>
 
 #include "randocha.h"
+#include "rand_sse.h"
+#include "rand_tea.h"
 //------------------------------------------------------------------------------
 // Sources:
 // Intel's benchmarking whitepaper
@@ -30,7 +33,7 @@ struct Results
   uint64_t varianceOfVariances = 0;
   uint64_t varianceOfMins      = 0;
   uint64_t numOutliers         = 0;
-  double varianceDeviation      = 0.0;
+  double varianceDeviation     = 0.0;
 
   std::vector<RandomNumbers> randomNumbers
     = std::vector<RandomNumbers>(NUM_ENSEMBLES);
@@ -143,6 +146,11 @@ calculateVariance(
   uint64_t meanValue,
   bool fromPartialSamples = false)
 {
+  if (values.size() <= 1)
+  {
+    return 0;
+  }
+
   uint64_t squaredTotals = 0;
   for (auto& value : values)
   {
@@ -331,6 +339,31 @@ main()
   calculateVarianceInfo(randochaResults);
   printResults(randochaResults);
   printSummary(randochaResults);
+
+  assert(
+    Randocha::NUM_GENERATED == RandSSE::NUM_GENERATED
+    || "Can't use ReturnValues for the SSE Benchmark as it has a different output size");
+  RandSSE randSseGen;
+  Results sseResults = runBenchmark(
+    [&randSseGen](ReturnValues& values) { randSseGen.rand_sse(values); });
+  calculateVarianceInfo(sseResults);
+  printResults(sseResults);
+  printSummary(sseResults);
+
+  assert(
+    Randocha::NUM_GENERATED == RandTea::NUM_GENERATED
+    || "Can't use ReturnValues for the TEA Benchmark as it has a different output size");
+  RandTea randTeaGen;
+  Results teaResults = runBenchmark([&randTeaGen](ReturnValues& values) {
+    randTeaGen.generate();
+    values[0] = randTeaGen.getF(0);
+    values[1] = randTeaGen.getF(1);
+    values[2] = randTeaGen.getF(2);
+    values[3] = randTeaGen.getF(3);
+  });
+  calculateVarianceInfo(teaResults);
+  printResults(teaResults);
+  printSummary(teaResults);
 
   return 0;
 }
