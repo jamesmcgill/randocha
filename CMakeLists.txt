@@ -19,7 +19,6 @@ target_link_libraries(randocha-bench
 set_target_properties(randocha-bench PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
-
 # CSV Exporter Executable (for distribution test)
 add_executable(randocha-csv source/csv_exporter.cpp)
 target_link_libraries(randocha-csv

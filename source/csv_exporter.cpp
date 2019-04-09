@@ -13,7 +13,7 @@ main()
   Randocha rand;
   std::vector<float> results(NUM_SAMPLES * Randocha::NUM_GENERATED);
 
-  for (int i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < NUM_SAMPLES; ++i)
   {
     rand.generate();
 

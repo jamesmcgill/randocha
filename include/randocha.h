@@ -56,7 +56,7 @@
 //------------------------------------------------------------------------------
 struct Randocha
 {
-  static const uint8_t NUM_GENERATED = 4;
+  static const size_t NUM_GENERATED = 4;
 
   Randocha()
   {
@@ -86,7 +86,7 @@ struct Randocha
     _mm_store_ps(m_generated, realConversion);
   }
 
-  float get(uint8_t index)
+  float get(uint32_t index)
   {
     assert(index < NUM_GENERATED);
     return m_generated[index];

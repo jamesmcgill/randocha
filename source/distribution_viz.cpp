@@ -8,19 +8,59 @@
 #include "randocha.h"
 #include "rand_sse.h"
 #include "rand_tea.h"
+
+#define STBI_MSC_SECURE_CRT
+#define STB_IMAGE_IMPLEMENTATION
+#pragma warning(push)
+#pragma warning(disable : 4100)    // Unreferenced parameter
+#include "stb_image.h"
+#pragma warning(pop)
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 //------------------------------------------------------------------------------
-static const size_t NUM_SAMPLES = 100000;
+static const size_t NUM_SAMPLES = 400000;
 static const size_t NUM_FLOATS  = NUM_SAMPLES * Randocha::NUM_GENERATED;
 using Results                   = std::vector<float>;
 
 static const int VIZ_RESOLUTION = 20;
+
+constexpr int IMAGE_WIDTH  = 640;
+constexpr int IMAGE_HEIGHT = 480;
+constexpr int NUM_PIXELS   = IMAGE_WIDTH * IMAGE_HEIGHT;
+static_assert(
+  NUM_PIXELS <= NUM_SAMPLES,
+  "Must have enough random variables to fill an image");
+using ImageBuffer = std::vector<uint32_t>;
+
+//------------------------------------------------------------------------------
+bool
+saveImage(const Results& results, const std::string& fileName)
+{
+  ImageBuffer image(NUM_PIXELS);
+
+  for (int i = 0; i < NUM_PIXELS; ++i)
+  {
+    const uint8_t channelVal = uint8_t(255.99f * results[i]);
+
+    image[i] = uint32_t(
+      (channelVal << 24) | (channelVal << 16) | (channelVal << 8)
+      | (channelVal));
+
+  }    // for NUM_PIXELS
+
+  return (
+    stbi_write_bmp(fileName.c_str(), IMAGE_WIDTH, IMAGE_HEIGHT, 3, image.data())
+    != 0);
+}
 
 //------------------------------------------------------------------------------
 void
 generateRandocha(Results& results)
 {
   Randocha rand;
-  for (int i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < NUM_SAMPLES; ++i)
   {
     rand.generate();
     results[(i * Randocha::NUM_GENERATED) + 0] = rand.get(0);
@@ -37,7 +77,7 @@ generateSse(Results& results)
   float values[4];
 
   RandSSE rand;
-  for (int i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < NUM_SAMPLES; ++i)
   {
     rand.rand_sse(values);
     results[(i * Randocha::NUM_GENERATED) + 0] = values[0];
@@ -52,7 +92,7 @@ void
 generateTea(Results& results)
 {
   RandTea rand;
-  for (int i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < NUM_SAMPLES; ++i)
   {
     rand.generate();
     results[(i * Randocha::NUM_GENERATED) + 0] = rand.getF(0);
@@ -84,7 +124,7 @@ vizDistribution(Results& results)
     distributionCounts[idx]++;
   }    // for NUM_FLOATS
 
-  for (int i = 0; i < VIZ_RESOLUTION; ++i)
+  for (size_t i = 0; i < VIZ_RESOLUTION; ++i)
   {
     static const int MAX_WIDTH     = 80;
     static const int TARGET_OF_MAX = 4;    // 1/4 of max_width
@@ -113,18 +153,21 @@ main()
   std::cout << "========\n";
   generateRandocha(results);
   vizDistribution(results);
+  saveImage(results, "randocha.bmp");
 
   std::cout << "\n\n";
   std::cout << "SSE\n";
   std::cout << "========\n";
   generateSse(results);
   vizDistribution(results);
+  saveImage(results, "rand_sse.bmp");
 
   std::cout << "\n\n";
   std::cout << "TEA\n";
   std::cout << "========\n";
   generateTea(results);
   vizDistribution(results);
+  saveImage(results, "rand_tea.bmp");
 
   return 0;
 }
