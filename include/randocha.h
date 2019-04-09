@@ -66,27 +66,22 @@ struct Randocha
 
   void generate()
   {
-    __m128i m;
-    m = _mm_aesenc_si128(m_curRoundKey, m_curRoundKey);
-    m = _mm_aesenc_si128(m, m_curRoundKey);
-    m = _mm_aesenc_si128(m, m_curRoundKey);
-    m = _mm_aesenclast_si128(m, m_curRoundKey);
+    static const __m128i MAGIC_CONST = _mm_set1_epi32(0x9E3779B9);
+    static const __m128 MAX_RANGE    = _mm_cvtepi32_ps(_mm_set1_epi32(INT_MAX));
 
-    // TODO(James): Is this required at all when not using a Fiesel Network
-    m_curRoundKey = _mm_add_epi32(m_curRoundKey, _mm_set1_epi32(0x9E3779B9));
+    __m128i m = _mm_aesenc_si128(m_curRoundKey, m_curRoundKey);
+    m_curRoundKey = _mm_add_epi32(m_curRoundKey, MAGIC_CONST);
 
     // convert to floats in range [0 -> 1)
     __m128 realConversion = _mm_cvtepi32_ps(m);
-
-    static const __m128 MAX_RANGE = _mm_cvtepi32_ps(_mm_set1_epi32(INT_MAX));
-    realConversion                = _mm_div_ps(realConversion, MAX_RANGE);
-    realConversion = _mm_add_ps(realConversion, _mm_set1_ps(1.0f));
-    realConversion = _mm_mul_ps(realConversion, _mm_set1_ps(0.5f));
+    realConversion        = _mm_div_ps(realConversion, MAX_RANGE);
+    realConversion        = _mm_add_ps(realConversion, _mm_set1_ps(1.0f));
+    realConversion        = _mm_mul_ps(realConversion, _mm_set1_ps(0.5f));
 
     _mm_store_ps(m_generated, realConversion);
   }
 
-  float get(uint32_t index)
+  float get(size_t index)
   {
     assert(index < NUM_GENERATED);
     return m_generated[index];
