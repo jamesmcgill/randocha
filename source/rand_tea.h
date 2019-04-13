@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 struct RandTea
 {
-  static const uint8_t NUM_GENERATED = 4;
+  static const size_t NUM_GENERATED = 4;
 
   void generate()
   {
@@ -34,16 +34,18 @@ struct RandTea
     return;
   }
 
-  uint32_t get(uint8_t index)
+  uint32_t get(size_t index)
   {
     assert(index < NUM_GENERATED);
     return m_values[index];
   }
 
-  float getF(uint8_t index)
+  float getF(size_t index)
   {
     assert(index < NUM_GENERATED);
-    return static_cast<float>(m_values[index]) / UINT32_MAX;
+
+    static const double RANGE = (double)(UINT32_MAX) + 1.0;
+    return static_cast<float>((double)m_values[index] / RANGE);
   }
 
   uint32_t m_values[NUM_GENERATED] = {};

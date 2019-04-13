@@ -20,17 +20,16 @@
 #include "stb_image_write.h"
 
 //------------------------------------------------------------------------------
-static const size_t NUM_SAMPLES = 400000;
-static const size_t NUM_FLOATS  = NUM_SAMPLES * Randocha::NUM_GENERATED;
-using Results                   = std::vector<float>;
+constexpr size_t NUM_FLOATS = 4'000'000;
+using Results               = std::vector<float>;
 
-static const int VIZ_RESOLUTION = 20;
+constexpr size_t VIZ_RESOLUTION = 50;
 
 constexpr int IMAGE_WIDTH  = 640;
 constexpr int IMAGE_HEIGHT = 480;
 constexpr int NUM_PIXELS   = IMAGE_WIDTH * IMAGE_HEIGHT;
 static_assert(
-  NUM_PIXELS <= NUM_SAMPLES,
+  NUM_PIXELS <= NUM_FLOATS,
   "Must have enough random variables to fill an image");
 using ImageBuffer = std::vector<uint32_t>;
 
@@ -59,47 +58,48 @@ saveImage(const Results& results, const std::string& fileName)
 void
 generateRandocha(Results& results)
 {
+  constexpr size_t numSamples = NUM_FLOATS / Randocha::NUM_GENERATED;
+  static_assert(
+    (NUM_FLOATS % Randocha::NUM_GENERATED) == 0,
+    "Please ensure to use an exact multiple of the number generated per call");
+
   Randocha rand;
-  for (size_t i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < numSamples; ++i)
   {
-    rand.generate();
-    results[(i * Randocha::NUM_GENERATED) + 0] = rand.get(0);
-    results[(i * Randocha::NUM_GENERATED) + 1] = rand.get(1);
-    results[(i * Randocha::NUM_GENERATED) + 2] = rand.get(2);
-    results[(i * Randocha::NUM_GENERATED) + 3] = rand.get(3);
-  }    // for NUM_SAMPLES
+    rand.generate(results.data() + (i * Randocha::NUM_GENERATED));
+  }
 }
 
 //------------------------------------------------------------------------------
 void
 generateSse(Results& results)
 {
-  float values[4];
+  constexpr size_t numSamples = NUM_FLOATS / RandSSE::NUM_GENERATED;
+  static_assert(
+    (NUM_FLOATS % RandSSE::NUM_GENERATED) == 0,
+    "Please ensure to use an exact multiple of the number generated per call");
 
   RandSSE rand;
-  for (size_t i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < numSamples; ++i)
   {
-    rand.rand_sse(values);
-    results[(i * Randocha::NUM_GENERATED) + 0] = values[0];
-    results[(i * Randocha::NUM_GENERATED) + 1] = values[1];
-    results[(i * Randocha::NUM_GENERATED) + 2] = values[2];
-    results[(i * Randocha::NUM_GENERATED) + 3] = values[3];
-  }    // for NUM_SAMPLES
+    rand.rand_sse(results.data() + (i * RandSSE::NUM_GENERATED));
+  }
 }
 
 //------------------------------------------------------------------------------
 void
 generateTea(Results& results)
 {
+  constexpr size_t numSamples = NUM_FLOATS / RandTea::NUM_GENERATED;
+  static_assert(
+    (NUM_FLOATS % RandTea::NUM_GENERATED) == 0,
+    "Please ensure to use an exact multiple of the number generated per call");
+
   RandTea rand;
-  for (size_t i = 0; i < NUM_SAMPLES; ++i)
+  for (size_t i = 0; i < numSamples; ++i)
   {
-    rand.generate();
-    results[(i * Randocha::NUM_GENERATED) + 0] = rand.getF(0);
-    results[(i * Randocha::NUM_GENERATED) + 1] = rand.getF(1);
-    results[(i * Randocha::NUM_GENERATED) + 2] = rand.getF(2);
-    results[(i * Randocha::NUM_GENERATED) + 3] = rand.getF(3);
-  }    // for NUM_SAMPLES
+    // rand.generate(results.data() + (i * RandTea::NUM_GENERATED));
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -114,21 +114,15 @@ vizDistribution(Results& results)
     assert(results[i] < 1.0f);
 
     // Quantize the values to easier count and display
-    size_t idx = static_cast<size_t>(results[i] * VIZ_RESOLUTION);
-    if (idx >= VIZ_RESOLUTION)    // TODO(James): Remove: Generators should not
-                                  // return >=1.0f, so index should be fine
-    {
-      continue;
-    }
-
+    size_t idx = static_cast<size_t>((double)results[i] * VIZ_RESOLUTION);
     distributionCounts[idx]++;
   }    // for NUM_FLOATS
 
   for (size_t i = 0; i < VIZ_RESOLUTION; ++i)
   {
-    static const int MAX_WIDTH     = 80;
-    static const int TARGET_OF_MAX = 4;    // 1/4 of max_width
-    static const int SCALE
+    constexpr int MAX_WIDTH     = 80;
+    constexpr int TARGET_OF_MAX = 2;    // 1/2 of max_width (if uniform)
+    constexpr int SCALE
       = ((NUM_FLOATS / VIZ_RESOLUTION) * TARGET_OF_MAX) / MAX_WIDTH;
 
     int scaledCount = distributionCounts[i] / SCALE;
@@ -162,12 +156,14 @@ main()
   vizDistribution(results);
   saveImage(results, "rand_sse.bmp");
 
-  std::cout << "\n\n";
-  std::cout << "TEA\n";
-  std::cout << "========\n";
-  generateTea(results);
-  vizDistribution(results);
-  saveImage(results, "rand_tea.bmp");
+  // FIX: generates only 4 floats (others do 8)
+  // FIX: images look like this is broken
+  // std::cout << "\n\n";
+  // std::cout << "TEA\n";
+  // std::cout << "========\n";
+  // generateTea(results);
+  // vizDistribution(results);
+  // saveImage(results, "rand_tea.bmp");
 
   return 0;
 }

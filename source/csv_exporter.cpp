@@ -5,33 +5,23 @@
 
 #include "randocha.h"
 
-static const size_t NUM_SAMPLES = 10000;
+constexpr size_t NUM_FLOATS  = 100'000;
+constexpr size_t NUM_SAMPLES = NUM_FLOATS / Randocha::NUM_GENERATED;
+static_assert(
+  (NUM_FLOATS % Randocha::NUM_GENERATED) == 0,
+  "Please ensure that the buffer size will be an exact multiple of the number generated per call");
+
 //------------------------------------------------------------------------------
 int
 main()
 {
-  Randocha rand;
-  std::vector<float> results(NUM_SAMPLES * Randocha::NUM_GENERATED);
+  std::vector<float> results(NUM_FLOATS);
 
+  Randocha rand;
   for (size_t i = 0; i < NUM_SAMPLES; ++i)
   {
-    rand.generate();
-
-    assert(rand.get(0) >= 0.0f);
-    assert(rand.get(1) >= 0.0f);
-    assert(rand.get(2) >= 0.0f);
-    assert(rand.get(3) >= 0.0f);
-
-    assert(rand.get(0) < 1.0f);
-    assert(rand.get(1) < 1.0f);
-    assert(rand.get(2) < 1.0f);
-    assert(rand.get(3) < 1.0f);
-
-    results[(i * Randocha::NUM_GENERATED) + 0] = rand.get(0);
-    results[(i * Randocha::NUM_GENERATED) + 1] = rand.get(1);
-    results[(i * Randocha::NUM_GENERATED) + 2] = rand.get(2);
-    results[(i * Randocha::NUM_GENERATED) + 3] = rand.get(3);
-  }    // for NUM_SAMPLES
+    rand.generate(results.data() + (i * Randocha::NUM_GENERATED));
+  }
 
   std::ofstream file("random_numbers.csv");
   file << std::fixed << std::setprecision(9);

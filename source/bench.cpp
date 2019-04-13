@@ -356,23 +356,24 @@ main()
   // printResults(sseResults);
   printSummary(sseResults);
 
-  assert(
-    Randocha::NUM_GENERATED == RandTea::NUM_GENERATED
-    || "Can't use ReturnValues for the TEA Benchmark as it has a different output size");
-  RandTea randTeaGen;
-  Results teaResults = runBenchmark([&randTeaGen](ReturnValues& values) {
-    randTeaGen.generate();
-    values[0] = randTeaGen.getF(0);
-    values[1] = randTeaGen.getF(1);
-    values[2] = randTeaGen.getF(2);
-    values[3] = randTeaGen.getF(3);
-  });
-  calculateVarianceInfo(teaResults);
-  std::cout << "\n\n";
-  std::cout << "TEA\n";
-  std::cout << "========\n";
-  // printResults(teaResults);
-  printSummary(teaResults);
+  // FIX: Don't generate the same number of floats
+  //assert(
+  //  Randocha::NUM_GENERATED == RandTea::NUM_GENERATED
+  //  || "Can't use ReturnValues for the TEA Benchmark as it has a different output size");
+  //RandTea randTeaGen;
+  //Results teaResults = runBenchmark([&randTeaGen](ReturnValues& values) {
+  //  randTeaGen.generate();
+  //  values[0] = randTeaGen.getF(0);
+  //  values[1] = randTeaGen.getF(1);
+  //  values[2] = randTeaGen.getF(2);
+  //  values[3] = randTeaGen.getF(3);
+  //});
+  //calculateVarianceInfo(teaResults);
+  //std::cout << "\n\n";
+  //std::cout << "TEA\n";
+  //std::cout << "========\n";
+  //// printResults(teaResults);
+  //printSummary(teaResults);
 
   return 0;
 }

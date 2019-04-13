@@ -15,8 +15,8 @@
 //
 // 1) Create an instance of Randocha (one per thread)
 // 2) Call the member function generate()
-//    This will generate 4 random numbers between [0.0f -> 1.0f)
-// 3) The Randocha object holds these 4 floats as internal member variables.
+//    This will generate 8 random numbers between [0.0f -> 1.0f)
+// 3) The Randocha object holds these floats as internal member variables.
 //    Access them with the get(idx) member function.
 // 4) Call generate() again to replace those internal floats with
 //    new random values.
@@ -27,6 +27,10 @@
 // float f1 = rand.get(1);
 // float f2 = rand.get(2);
 // float f3 = rand.get(3);
+// float f4 = rand.get(4);
+// float f5 = rand.get(5);
+// float f6 = rand.get(6);
+// float f7 = rand.get(7);
 // rand.generate();
 // ...
 // ...
@@ -42,21 +46,14 @@
 //------------------------------------------------------------------------------
 // TODO:
 //
-// Allow streaming into a larger user-provided buffer
-//  to get more than 4 values at a time.
-//
 // Implement on GCC/Clang
-//
-// Performance is not really better than SSE (any improvements, check asm)
-//
-// Fix SSE returning 1.0f as a valid value
 //
 // Make it truly header-only
 //
 //------------------------------------------------------------------------------
 struct Randocha
 {
-  static const size_t NUM_GENERATED = 4;
+  static const size_t NUM_GENERATED = 8;
 
   Randocha()
   {
@@ -64,31 +61,61 @@ struct Randocha
       = _mm_set_epi32(0xA341316C, 0xC8013EA4, 0xAD90777D, 0x7E95761E);
   }
 
-  void generate()
+  //----------------------------------------------------------------------------
+  // convert to floats in range [0 -> 1)
+  // A float can't precisely represent the full range of an int32_t.
+  // A float's range retaining integer precision is -16777216 -> 16777215
+  // Rather than dropping bits to just 25bits, we instead drop
+  // all the way down to just 16bits of randomness, but double the amount
+  // of floats generated.
+  //----------------------------------------------------------------------------
+  void m128iToScaledFloat(const __m128i& input, float out[NUM_GENERATED])
   {
-    static const __m128i MAGIC_CONST = _mm_set1_epi32(0x9E3779B9);
-    static const __m128 MAX_RANGE    = _mm_cvtepi32_ps(_mm_set1_epi32(INT_MAX));
+    static const __m128i mask     = _mm_set1_epi32(0x0000FFFF);
+    static const __m128 RANGE     = _mm_set1_ps(65535.f + 1.f);
+    static const __m128 INV_RANGE = _mm_div_ps(_mm_set1_ps(1.f), RANGE);
 
-    __m128i m = _mm_aesenc_si128(m_curRoundKey, m_curRoundKey);
-    m_curRoundKey = _mm_add_epi32(m_curRoundKey, MAGIC_CONST);
+    __m128i rightSide      = _mm_and_si128(mask, input);
+    __m128 rRealConversion = _mm_cvtepi32_ps(rightSide);
+    rRealConversion        = _mm_mul_ps(rRealConversion, INV_RANGE);
+    _mm_store_ps(out, rRealConversion);
 
-    // convert to floats in range [0 -> 1)
-    __m128 realConversion = _mm_cvtepi32_ps(m);
-    realConversion        = _mm_div_ps(realConversion, MAX_RANGE);
-    realConversion        = _mm_add_ps(realConversion, _mm_set1_ps(1.0f));
-    realConversion        = _mm_mul_ps(realConversion, _mm_set1_ps(0.5f));
-
-    _mm_store_ps(m_generated, realConversion);
+    __m128i leftSide       = _mm_srli_epi32(input, 16);
+    __m128 lRealConversion = _mm_cvtepi32_ps(leftSide);
+    lRealConversion        = _mm_mul_ps(lRealConversion, INV_RANGE);
+    _mm_store_ps(out + 4, lRealConversion);
   }
 
+  //----------------------------------------------------------------------------
+  // Generate random numbers and store the results in a user provided buffer
+  //----------------------------------------------------------------------------
+  void generate(float result[NUM_GENERATED])
+  {
+    static const __m128i MAGIC_CONST = _mm_set1_epi32(0x9E3779B9);
+    __m128i randomBits = _mm_aesenc_si128(m_curRoundKey, m_curRoundKey);
+    m_curRoundKey      = _mm_add_epi32(m_curRoundKey, MAGIC_CONST);
+
+    m128iToScaledFloat(randomBits, result);
+  }
+
+  //----------------------------------------------------------------------------
+  // Generate random numbers and store the results internally
+  //----------------------------------------------------------------------------
+  void generate()
+  {
+    generate(m_internalBuffer);
+  }
+
+  //----------------------------------------------------------------------------
   float get(size_t index)
   {
     assert(index < NUM_GENERATED);
-    return m_generated[index];
+    return m_internalBuffer[index];
   }
 
+  //----------------------------------------------------------------------------
   __m128i m_curRoundKey;
-  float m_generated[NUM_GENERATED] = {};
+  float m_internalBuffer[NUM_GENERATED] = {};
 };
 
 //------------------------------------------------------------------------------
