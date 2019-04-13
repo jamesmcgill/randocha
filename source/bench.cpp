@@ -16,8 +16,8 @@
 // https://www.mathsisfun.com/data/standard-deviation.html
 //
 //------------------------------------------------------------------------------
-static const size_t NUM_ENSEMBLES = 1000;
-static const size_t NUM_SAMPLES   = 100;
+constexpr size_t NUM_SAMPLES = 100;
+constexpr size_t NUM_ROUNDS  = 1000;
 
 //------------------------------------------------------------------------------
 using Durations     = std::vector<uint64_t>;
@@ -36,16 +36,16 @@ struct Results
   double varianceDeviation     = 0.0;
 
   std::vector<RandomNumbers> randomNumbers
-    = std::vector<RandomNumbers>(NUM_ENSEMBLES);
+    = std::vector<RandomNumbers>(NUM_ROUNDS);
 
-  std::vector<Durations> durations   = std::vector<Durations>(NUM_ENSEMBLES);
-  std::vector<uint64_t> maxDurations = std::vector<uint64_t>(NUM_ENSEMBLES);
-  std::vector<uint64_t> minDurations = std::vector<uint64_t>(NUM_ENSEMBLES);
-  std::vector<uint64_t> avgDurations = std::vector<uint64_t>(NUM_ENSEMBLES);
+  std::vector<Durations> durations   = std::vector<Durations>(NUM_ROUNDS);
+  std::vector<uint64_t> maxDurations = std::vector<uint64_t>(NUM_ROUNDS);
+  std::vector<uint64_t> minDurations = std::vector<uint64_t>(NUM_ROUNDS);
+  std::vector<uint64_t> avgDurations = std::vector<uint64_t>(NUM_ROUNDS);
 
-  std::vector<uint64_t> variances       = std::vector<uint64_t>(NUM_ENSEMBLES);
-  std::vector<uint64_t> deviations      = std::vector<uint64_t>(NUM_ENSEMBLES);
-  std::vector<uint64_t> deviationRanges = std::vector<uint64_t>(NUM_ENSEMBLES);
+  std::vector<uint64_t> variances       = std::vector<uint64_t>(NUM_ROUNDS);
+  std::vector<uint64_t> deviations      = std::vector<uint64_t>(NUM_ROUNDS);
+  std::vector<uint64_t> deviationRanges = std::vector<uint64_t>(NUM_ROUNDS);
 };
 
 //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ runBenchmark(Func _funcToBenchmark)
   start = __rdtsc();
 
   // Run benchmarks
-  for (size_t i = 0; i < NUM_ENSEMBLES; ++i)
+  for (size_t i = 0; i < NUM_ROUNDS; ++i)
   {
     RandomNumbers randomNumbers(NUM_SAMPLES * Randocha::NUM_GENERATED);
     Durations durations(NUM_SAMPLES);
@@ -177,7 +177,7 @@ calculateVariance(std::vector<uint64_t> values, bool fromPartialSamples = false)
 void
 calculateVarianceInfo(Results& results)
 {
-  for (size_t i = 0; i < NUM_ENSEMBLES; ++i)
+  for (size_t i = 0; i < NUM_ROUNDS; ++i)
   {
     // Calculate mean, min, max durations
     uint64_t total       = 0;
@@ -218,22 +218,22 @@ calculateVarianceInfo(Results& results)
   std::vector<uint64_t> filteredRanges;
   std::vector<uint64_t> filteredMinDurations;
   std::vector<uint64_t> filteredAvgDurations;
-  filteredVariances.reserve(NUM_ENSEMBLES);
-  filteredRanges.reserve(NUM_ENSEMBLES);
-  filteredMinDurations.reserve(NUM_ENSEMBLES);
-  filteredAvgDurations.reserve(NUM_ENSEMBLES);
+  filteredVariances.reserve(NUM_ROUNDS);
+  filteredRanges.reserve(NUM_ROUNDS);
+  filteredMinDurations.reserve(NUM_ROUNDS);
+  filteredAvgDurations.reserve(NUM_ROUNDS);
 
-  assert(results.deviations.size() == NUM_ENSEMBLES);
+  assert(results.deviations.size() == NUM_ROUNDS);
   uint64_t numOutliers = 0;
-  for (size_t i = 0; i < NUM_ENSEMBLES; ++i)
+  for (size_t i = 0; i < NUM_ROUNDS; ++i)
   {
     static const uint64_t DEVIATION_LIMIT = 3;
-    while (i < NUM_ENSEMBLES && results.deviations[i] > DEVIATION_LIMIT)
+    while (i < NUM_ROUNDS && results.deviations[i] > DEVIATION_LIMIT)
     {
       ++i;    // skip and don't copy these ones
       ++numOutliers;
     }
-    if (i >= NUM_ENSEMBLES)
+    if (i >= NUM_ROUNDS)
     {
       break;
     }
@@ -269,7 +269,7 @@ calculateVarianceInfo(Results& results)
 void
 printResults(Results& results)
 {
-  for (size_t i = 0; i < NUM_ENSEMBLES; ++i)
+  for (size_t i = 0; i < NUM_ROUNDS; ++i)
   {
     std::cout << i << ":->  mean: " << results.avgDurations[i]
               << ", min: " << results.minDurations[i]
@@ -277,7 +277,7 @@ printResults(Results& results)
               << ", variance: " << results.variances[i]
               << ", deviation: " << results.deviations[i]
               << ", maxDev: " << results.deviationRanges[i] << "\n";
-  }    // for NUM_ENSEMBLES
+  }    // for NUM_ROUNDS
   std::cout << "\n";
 }
 
@@ -294,7 +294,7 @@ printSummary(Results& results)
   std::cout << "Quality of Results:\n";
   std::cout << "===================\n";
   std::cout << "number of outlier rounds removed: " << results.numOutliers
-            << " (from " << NUM_ENSEMBLES << ")\n"
+            << " (from " << NUM_ROUNDS << ")\n"
             << "average variance: " << results.avgVariance << " (error: +/-"
             << sqrt(results.avgVariance) << " cycles)\n"
             << "absolute max deviation: " << results.maxDeviationRange << "\n"
@@ -316,10 +316,14 @@ main()
 
   // Baseline benchmark, with no instructions
   Results baselineResults = runBenchmark([](ReturnValues& values) {
-    values[0] = 1.0f;
-    values[1] = 2.0f;
-    values[2] = 3.0f;
-    values[3] = 4.0f;
+    values[0] = 0.0f;
+    values[1] = 1.0f;
+    values[2] = 2.0f;
+    values[3] = 3.0f;
+    values[4] = 4.0f;
+    values[5] = 5.0f;
+    values[6] = 6.0f;
+    values[7] = 7.0f;
   });
   calculateVarianceInfo(baselineResults);
   std::cout << "\n\n";
@@ -329,13 +333,8 @@ main()
   printSummary(baselineResults);
 
   Randocha rand;
-  Results randochaResults = runBenchmark([&rand](ReturnValues& values) {
-    rand.generate();
-    values[0] = rand.get(0);
-    values[1] = rand.get(1);
-    values[2] = rand.get(2);
-    values[3] = rand.get(3);
-  });
+  Results randochaResults
+    = runBenchmark([&rand](ReturnValues& values) { rand.generate(values); });
   calculateVarianceInfo(randochaResults);
   std::cout << "\n\n";
   std::cout << "Randocha\n";
@@ -343,9 +342,9 @@ main()
   // printResults(randochaResults);
   printSummary(randochaResults);
 
-  assert(
-    Randocha::NUM_GENERATED == RandSSE::NUM_GENERATED
-    || "Can't use ReturnValues for the SSE Benchmark as it has a different output size");
+  static_assert(
+    Randocha::NUM_GENERATED == RandSSE::NUM_GENERATED,
+    "Can't use ReturnValues for the SSE Benchmark as it has a different output size");
   RandSSE randSseGen;
   Results sseResults = runBenchmark(
     [&randSseGen](ReturnValues& values) { randSseGen.rand_sse(values); });
@@ -356,24 +355,30 @@ main()
   // printResults(sseResults);
   printSummary(sseResults);
 
-  // FIX: Don't generate the same number of floats
-  //assert(
-  //  Randocha::NUM_GENERATED == RandTea::NUM_GENERATED
-  //  || "Can't use ReturnValues for the TEA Benchmark as it has a different output size");
-  //RandTea randTeaGen;
-  //Results teaResults = runBenchmark([&randTeaGen](ReturnValues& values) {
-  //  randTeaGen.generate();
-  //  values[0] = randTeaGen.getF(0);
-  //  values[1] = randTeaGen.getF(1);
-  //  values[2] = randTeaGen.getF(2);
-  //  values[3] = randTeaGen.getF(3);
-  //});
-  //calculateVarianceInfo(teaResults);
-  //std::cout << "\n\n";
-  //std::cout << "TEA\n";
-  //std::cout << "========\n";
-  //// printResults(teaResults);
-  //printSummary(teaResults);
+  static_assert(
+    Randocha::NUM_GENERATED == RandTea::NUM_GENERATED * 4,
+    "Can't use ReturnValues for the TEA Benchmark as it has a different output size");
+  RandTea randTeaGen;
+  Results teaResults = runBenchmark([&randTeaGen](ReturnValues& values) {
+    randTeaGen.generate();
+    values[0] = randTeaGen.getF(0);
+    values[1] = randTeaGen.getF(1);
+    randTeaGen.generate();
+    values[2] = randTeaGen.getF(0);
+    values[3] = randTeaGen.getF(1);
+    randTeaGen.generate();
+    values[4] = randTeaGen.getF(0);
+    values[5] = randTeaGen.getF(1);
+    randTeaGen.generate();
+    values[6] = randTeaGen.getF(0);
+    values[7] = randTeaGen.getF(1);
+  });
+  calculateVarianceInfo(teaResults);
+  std::cout << "\n\n";
+  std::cout << "TEA\n";
+  std::cout << "========\n";
+  // printResults(teaResults);
+  printSummary(teaResults);
 
   return 0;
 }

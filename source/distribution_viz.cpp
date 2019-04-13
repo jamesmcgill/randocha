@@ -98,7 +98,9 @@ generateTea(Results& results)
   RandTea rand;
   for (size_t i = 0; i < numSamples; ++i)
   {
-    // rand.generate(results.data() + (i * RandTea::NUM_GENERATED));
+    rand.generate();
+    results[(i * RandTea::NUM_GENERATED) + 0] = rand.getF(0);
+    results[(i * RandTea::NUM_GENERATED) + 1] = rand.getF(1);
   }
 }
 
@@ -156,14 +158,12 @@ main()
   vizDistribution(results);
   saveImage(results, "rand_sse.bmp");
 
-  // FIX: generates only 4 floats (others do 8)
-  // FIX: images look like this is broken
-  // std::cout << "\n\n";
-  // std::cout << "TEA\n";
-  // std::cout << "========\n";
-  // generateTea(results);
-  // vizDistribution(results);
-  // saveImage(results, "rand_tea.bmp");
+  std::cout << "\n\n";
+  std::cout << "TEA\n";
+  std::cout << "========\n";
+  generateTea(results);
+  vizDistribution(results);
+  saveImage(results, "rand_tea.bmp");
 
   return 0;
 }

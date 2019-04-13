@@ -9,46 +9,33 @@
 #include <cstdint>
 #include <climits>
 #include <assert.h>
-
+//------------------------------------------------------------------------------
+//  Randocha (Rand + Japanese TEA)
+//
+//  Random number generator built for speed
+//  Therefore it is NOT cryptographically secure
+//
+//  Generates fairly decent white noise images (using included distribution_viz)
+//  Generates random numbers in the range [0.0f -> 1.0f)
+//  8 random numbers are generated at a time
+//
 //------------------------------------------------------------------------------
 // Usage:
 //
-// 1) Create an instance of Randocha (one per thread)
-// 2) Call the member function generate()
-//    This will generate 8 random numbers between [0.0f -> 1.0f)
-// 3) The Randocha object holds these floats as internal member variables.
-//    Access them with the get(idx) member function.
-// 4) Call generate() again to replace those internal floats with
-//    new random values.
+// 1) Create an instance of Randocha (one per thread, as there is state)
+// 2) Call the member function generate() giving a buffer big enough to store
+//    the results
+// 3) The buffer will contain 8 random numbers between [0.0f -> 1.0f)
 //
+// e.g.
 // Randocha rand;
-// rand.generate();
-// float f0 = rand.get(0);
-// float f1 = rand.get(1);
-// float f2 = rand.get(2);
-// float f3 = rand.get(3);
-// float f4 = rand.get(4);
-// float f5 = rand.get(5);
-// float f6 = rand.get(6);
-// float f7 = rand.get(7);
-// rand.generate();
-// ...
-// ...
-//
-//------------------------------------------------------------------------------
-// Sources:
-// Manny Ko's GDC presentation Parallel Random Number Generation
-// https://gdcvault.com/play/1022146/Math-for-Game-Programmers-Parallel
-//
-// TEA
-// https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm
+// float buffer[Randocha::NUM_GENERATED];
+// rand.generate(buffer);
 //
 //------------------------------------------------------------------------------
 // TODO:
 //
 // Implement on GCC/Clang
-//
-// Make it truly header-only
 //
 //------------------------------------------------------------------------------
 struct Randocha
