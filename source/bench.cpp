@@ -357,7 +357,7 @@ main()
 
   static_assert(
     Randocha::NUM_GENERATED == RandTea::NUM_GENERATED * 4,
-    "Can't use ReturnValues for the TEA Benchmark as it has a different output size");
+    "TEA Benchmark only generates 2 values, need to call repeatedly to match required output size");
   RandTea randTeaGen;
   Results teaResults = runBenchmark([&randTeaGen](ReturnValues& values) {
     randTeaGen.generate();

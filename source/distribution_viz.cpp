@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <map>
 #include <numeric>
@@ -110,15 +111,31 @@ vizDistribution(Results& results)
 {
   std::vector<int> distributionCounts(VIZ_RESOLUTION);
 
+  double total = 0.0;
+  float min    = 2.0f;
+  float max    = -2.0f;
   for (int i = 0; i < NUM_FLOATS; ++i)
   {
     assert(results[i] >= 0.0f);
     assert(results[i] < 1.0f);
+    total += results[i];
+
+    if (results[i] < min)
+    {
+      min = results[i];
+    }
+    if (results[i] > max)
+    {
+      max = results[i];
+    }
 
     // Quantize the values to easier count and display
     size_t idx = static_cast<size_t>((double)results[i] * VIZ_RESOLUTION);
     distributionCounts[idx]++;
   }    // for NUM_FLOATS
+
+  std::cout << std::fixed << std::setw(11) << std::setprecision(8);
+  std::cout << "Mean: " << (total / NUM_FLOATS) << " Min: " << min << " Max: " << max << "\n";
 
   for (size_t i = 0; i < VIZ_RESOLUTION; ++i)
   {
@@ -128,7 +145,6 @@ vizDistribution(Results& results)
       = ((NUM_FLOATS / VIZ_RESOLUTION) * TARGET_OF_MAX) / MAX_WIDTH;
 
     int scaledCount = distributionCounts[i] / SCALE;
-
     std::cout << i << "\t:";
     for (int j = 0; j < scaledCount; ++j)
     {

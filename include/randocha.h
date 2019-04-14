@@ -69,7 +69,7 @@ randocha__m128iToScaledFloat(
   const __m128i& input, float out[randocha__NUM_GENERATED])
 {
   static const __m128i mask     = _mm_set1_epi32(0x0000FFFF);
-  static const __m128 RANGE     = _mm_set1_ps(65535.f + 1.f);
+  static const __m128 RANGE     = _mm_set1_ps(65535.f + 0.01f);
   static const __m128 INV_RANGE = _mm_div_ps(_mm_set1_ps(1.f), RANGE);
 
   __m128i rightSide      = _mm_and_si128(mask, input);
