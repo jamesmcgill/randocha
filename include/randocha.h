@@ -92,6 +92,27 @@ randocha__generateFloat(
 }
 
 //------------------------------------------------------------------------------
+bool
+randocha__isAesSupported()
+{
+  int cpuInfo[4];
+
+  __cpuid(cpuInfo, 0);
+  const int numIds = cpuInfo[0];
+  if (numIds < 1)
+  {
+    return false;
+  }
+  __cpuid(cpuInfo, 1);
+  if (!(cpuInfo[2] & 0x2000000))    // check bit at index 25 in ECX is set
+  {
+    return false;
+  }
+
+  return true;
+}
+
+//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 // C++ Helper object, with internal state and some storage

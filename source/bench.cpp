@@ -50,7 +50,7 @@ struct Results
 
 //------------------------------------------------------------------------------
 bool
-checkCpuSupport()
+isRdtscpSupported()
 {
   int cpuInfo[4];
 
@@ -67,7 +67,7 @@ checkCpuSupport()
   }
 
   __cpuid(cpuInfo, 0x80000001);
-  if (!(cpuInfo[3] & 0x08000000))    // check bit at index 27 in EDX is set
+  if (!(cpuInfo[3] & 0x08000000))    // check bit at INDEX 27 in EDX is set
   {
     std::cerr << "RDTSCP not supported!" << std::endl;
     return false;
@@ -309,9 +309,19 @@ printSummary(Results& results)
 int
 main()
 {
-  if (!checkCpuSupport())
+  if (!isRdtscpSupported())
   {
     return 1;
+  }
+
+  if (!randocha__isAesSupported())
+  {
+    std::cout << "AES-NI not supported on this CPU. Terminating.\n";
+    return 1;
+  }
+  else
+  {
+    std::cout << "AES-NI supported\n";
   }
 
   // Baseline benchmark, with no instructions

@@ -135,7 +135,8 @@ vizDistribution(Results& results)
   }    // for NUM_FLOATS
 
   std::cout << std::fixed << std::setw(11) << std::setprecision(8);
-  std::cout << "Mean: " << (total / NUM_FLOATS) << " Min: " << min << " Max: " << max << "\n";
+  std::cout << "Mean: " << (total / NUM_FLOATS) << " Min: " << min
+            << " Max: " << max << "\n";
 
   for (size_t i = 0; i < VIZ_RESOLUTION; ++i)
   {
@@ -159,6 +160,12 @@ vizDistribution(Results& results)
 int
 main()
 {
+  if (!randocha__isAesSupported())
+  {
+    std::cout << "AES-NI instruction set not supported on this CPU. Terminating\n";
+    return 1;
+  }
+
   Results results(NUM_FLOATS);
   std::cout << "\n\n";
   std::cout << "Randocha\n";
