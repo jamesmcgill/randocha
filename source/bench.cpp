@@ -1,12 +1,21 @@
+#include "randocha.h"
+#include "rand_sse.h"
+#include "rand_tea.h"
+
 #include <iostream>
 #include <vector>
 #include <numeric>
 #include <algorithm>
 #include <cassert>
 
-#include "randocha.h"
-#include "rand_sse.h"
-#include "rand_tea.h"
+#if _MSC_VER
+#  include <intrin.h>
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+#  include <immintrin.h>
+#else
+#  include <x86intrin.h>
+#  include <cpuid.h>
+#endif
 //------------------------------------------------------------------------------
 // Sources:
 // Intel's benchmarking whitepaper
@@ -49,6 +58,7 @@ struct Results
 };
 
 //------------------------------------------------------------------------------
+#if _MSC_VER
 bool
 isRdtscpSupported()
 {
@@ -76,6 +86,32 @@ isRdtscpSupported()
   std::cout << "RDTSCP supported" << std::endl;
   return true;
 }
+
+//------------------------------------------------------------------------------
+#else
+bool
+isRdtscpSupported()
+{
+  unsigned int sig;
+  const int numExtendedIds = __get_cpuid_max(0x80000000, &sig);
+  if (numExtendedIds < 0x80000001)
+  {
+    std::cerr << "Extended functions (like RDTSCP) not supported!" << std::endl;
+    return false;
+  }
+
+  unsigned int eax, ebx, ecx, edx;
+  __get_cpuid(0x80000001, &eax, &ebx, &ecx, &edx);
+  if (!(edx & 0x08000000))
+  {
+    std::cerr << "RDTSCP not supported!" << std::endl;
+    return false;
+  }
+
+  std::cout << "RDTSCP supported" << std::endl;
+  return true;
+}
+#endif
 
 //------------------------------------------------------------------------------
 template <typename Func>

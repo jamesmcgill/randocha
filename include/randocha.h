@@ -1,9 +1,12 @@
 ﻿#pragma once
 
 #if _MSC_VER
-#include <intrin.h>
+#  include <intrin.h>
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+#  include <immintrin.h>
 #else
-#include <x86intrin.h>
+#  include <x86intrin.h>
+#  include <cpuid.h>
 #endif
 
 #include <assert.h>
@@ -29,11 +32,6 @@
 // Randocha rand;
 // float buffer[Randocha::NUM_GENERATED];
 // rand.generate(buffer);
-//
-//------------------------------------------------------------------------------
-// TODO:
-//
-// Implement on GCC/Clang
 //
 //------------------------------------------------------------------------------
 #define randocha__NUM_GENERATED 8
@@ -92,6 +90,7 @@ randocha__generateFloat(
 }
 
 //------------------------------------------------------------------------------
+#if _MSC_VER
 bool
 randocha__isAesSupported()
 {
@@ -112,6 +111,36 @@ randocha__isAesSupported()
   return true;
 }
 
+//------------------------------------------------------------------------------
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+bool
+randocha__isAesSupported()
+{
+  return _may_i_use_cpu_feature(_FEATURE_AES);
+}
+
+//------------------------------------------------------------------------------
+#else
+bool
+randocha__isAesSupported()
+{
+  unsigned int sig;
+  const int numIds = __get_cpuid_max(0, &sig);
+  if (numIds < 1)
+  {
+    return false;
+  }
+
+  unsigned int eax, ebx, ecx, edx;
+  __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+  if (!(ecx & bit_AES))
+  {
+    return false;
+  }
+
+  return true;
+}
+#endif
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------

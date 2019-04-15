@@ -3,6 +3,9 @@ project (randocha VERSION 0.0.1 DESCRIPTION "Fast x86 intrinsic based Random Num
 
 if (MSVC)
   add_compile_options(/W4 /permissive-)
+else()
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -maes")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maes")
 endif()
 
 # Dependencies

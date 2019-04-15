@@ -1,16 +1,11 @@
-#include <iostream>
-#include <iomanip>
-#include <vector>
-#include <map>
-#include <numeric>
-#include <algorithm>
-#include <cassert>
-
 #include "randocha.h"
 #include "rand_sse.h"
 #include "rand_tea.h"
 
-#define STBI_MSC_SECURE_CRT
+#if _MSC_VER
+#  define STBI_MSC_SECURE_CRT
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #pragma warning(push)
 #pragma warning(disable : 4100)    // Unreferenced parameter
@@ -20,6 +15,13 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <map>
+#include <numeric>
+#include <algorithm>
+#include <cassert>
 //------------------------------------------------------------------------------
 constexpr size_t NUM_FLOATS = 4'000'000;
 using Results               = std::vector<float>;
