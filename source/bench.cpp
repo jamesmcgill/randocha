@@ -27,6 +27,8 @@
 // https://www.mathsisfun.com/data/standard-deviation.html
 //
 //------------------------------------------------------------------------------
+#define UNREFERENCED_PARAMETER(P) (P)
+
 constexpr size_t NUM_SAMPLES = 100;
 constexpr size_t NUM_ROUNDS  = 1000;
 
@@ -117,23 +119,25 @@ isRdtscpSupported()
 
 //------------------------------------------------------------------------------
 #if _MSC_VER
-static inline
-void
+static inline void
 startTiming(uint64_t& startTs, int cpuInfo[4], unsigned long irqFlags)
 {
-  __cpuid(cpuInfo, 0);   // Halt until all previous instructions completed
+  UNREFERENCED_PARAMETER(irqFlags);
+
+  __cpuid(cpuInfo, 0);    // Halt until all previous instructions completed
   startTs = __rdtsc();
 }
 
 //------------------------------------------------------------------------------
 #else
-static inline
-void
+static inline void
 startTiming(uint64_t& startTs, int cpuInfo[4], unsigned long irqFlags)
 {
+  UNREFERENCED_PARAMETER(irqFlags);
+
   // TODO: disable this only in WSL
-  //preempt_disable();
-  //raw_local_irq_save(irqFlags);
+  // preempt_disable();
+  // raw_local_irq_save(irqFlags);
 
   // Halt until all previous instructions completed
   __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
@@ -143,35 +147,38 @@ startTiming(uint64_t& startTs, int cpuInfo[4], unsigned long irqFlags)
 
 //------------------------------------------------------------------------------
 #if _MSC_VER
-static inline
-void
-stopTiming(uint64_t& endTs, int cpuInfo[4], uint32_t& aux, unsigned long irqFlags)
+static inline void
+stopTiming(
+  uint64_t& endTs, int cpuInfo[4], uint32_t& aux, unsigned long irqFlags)
 {
-  endTs = __rdtscp(&aux);  // Timestamp taken only after benchmark done
-  __cpuid(cpuInfo, 0);     // Prevent further execution until timestamp taken
+  UNREFERENCED_PARAMETER(irqFlags);
+
+  endTs = __rdtscp(&aux);    // Timestamp taken only after benchmark done
+  __cpuid(cpuInfo, 0);       // Prevent further execution until timestamp taken
 }
 
 //------------------------------------------------------------------------------
 #else
-static inline
-void
-stopTiming(uint64_t& endTs, int cpuInfo[4], uint32_t& aux, unsigned long irqFlags)
+static inline void
+stopTiming(
+  uint64_t& endTs, int cpuInfo[4], uint32_t& aux, unsigned long irqFlags)
 {
+  UNREFERENCED_PARAMETER(irqFlags);
+
   endTs = __rdtscp(&aux);    // Timestamp taken only after benchmark done
 
   // Prevent further execution until timestamp taken
   __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
 
   // TODO: disable this only in WSL
-  //raw_local_irq_restore(irqFlags);
-  //preempt_enable();
+  // raw_local_irq_restore(irqFlags);
+  // preempt_enable();
 }
 #endif
 
 //------------------------------------------------------------------------------
 #if _MSC_VER
-static inline
-void
+static inline void
 warmup(uint64_t& startTs, uint64_t& endTs, int cpuInfo[4], uint32_t& aux)
 {
   __cpuid(cpuInfo, 0);
@@ -184,8 +191,7 @@ warmup(uint64_t& startTs, uint64_t& endTs, int cpuInfo[4], uint32_t& aux)
 
 //------------------------------------------------------------------------------
 #else
-static inline
-void
+static inline void
 warmup(uint64_t& startTs, uint64_t& endTs, int cpuInfo[4], uint32_t& aux)
 {
   __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
@@ -207,7 +213,7 @@ runBenchmark(Func _funcToBenchmark)
   uint64_t start = 0;
   uint64_t end   = 0;
 
-  unsigned long irqFlags;
+  unsigned long irqFlags = 0L;
   uint32_t aux;
   int cpuInfo[4];
   warmup(start, end, cpuInfo, aux);

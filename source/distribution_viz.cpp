@@ -3,7 +3,7 @@
 #include "rand_tea.h"
 
 #if _MSC_VER
-#  define STBI_MSC_SECURE_CRT
+#define STBI_MSC_SECURE_CRT
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -164,7 +164,8 @@ main()
 {
   if (!randocha__isAesSupported())
   {
-    std::cout << "AES-NI instruction set not supported on this CPU. Terminating\n";
+    std::cout
+      << "AES-NI instruction set not supported on this CPU. Terminating\n";
     return 1;
   }
 
