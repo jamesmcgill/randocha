@@ -7,15 +7,17 @@
 #include <numeric>
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
-#if _MSC_VER
-#  include <intrin.h>
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-#  include <immintrin.h>
-#else
-#  include <x86intrin.h>
-#  include <cpuid.h>
+#ifndef _MSC_VER
+//#  include <linux/module.h>
+//#  include <linux/kernel.h>
+//#  include <linux/init.h>
+//#  include <linux/hardirq.h>
+//#  include <linux/preempt.h>
+//#  include <linux/sched.h>
 #endif
+
 //------------------------------------------------------------------------------
 // Sources:
 // Intel's benchmarking whitepaper
@@ -59,7 +61,7 @@ struct Results
 
 //------------------------------------------------------------------------------
 #if _MSC_VER
-bool
+static bool
 isRdtscpSupported()
 {
   int cpuInfo[4];
@@ -89,7 +91,7 @@ isRdtscpSupported()
 
 //------------------------------------------------------------------------------
 #else
-bool
+static bool
 isRdtscpSupported()
 {
   unsigned int sig;
@@ -114,8 +116,90 @@ isRdtscpSupported()
 #endif
 
 //------------------------------------------------------------------------------
+#if _MSC_VER
+static inline
+void
+startTiming(uint64_t& startTs, int cpuInfo[4], unsigned long irqFlags)
+{
+  __cpuid(cpuInfo, 0);   // Halt until all previous instructions completed
+  startTs = __rdtsc();
+}
+
+//------------------------------------------------------------------------------
+#else
+static inline
+void
+startTiming(uint64_t& startTs, int cpuInfo[4], unsigned long irqFlags)
+{
+  // TODO: disable this only in WSL
+  //preempt_disable();
+  //raw_local_irq_save(irqFlags);
+
+  // Halt until all previous instructions completed
+  __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
+  startTs = __rdtsc();
+}
+#endif
+
+//------------------------------------------------------------------------------
+#if _MSC_VER
+static inline
+void
+stopTiming(uint64_t& endTs, int cpuInfo[4], uint32_t& aux, unsigned long irqFlags)
+{
+  endTs = __rdtscp(&aux);  // Timestamp taken only after benchmark done
+  __cpuid(cpuInfo, 0);     // Prevent further execution until timestamp taken
+}
+
+//------------------------------------------------------------------------------
+#else
+static inline
+void
+stopTiming(uint64_t& endTs, int cpuInfo[4], uint32_t& aux, unsigned long irqFlags)
+{
+  endTs = __rdtscp(&aux);    // Timestamp taken only after benchmark done
+
+  // Prevent further execution until timestamp taken
+  __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
+
+  // TODO: disable this only in WSL
+  //raw_local_irq_restore(irqFlags);
+  //preempt_enable();
+}
+#endif
+
+//------------------------------------------------------------------------------
+#if _MSC_VER
+static inline
+void
+warmup(uint64_t& startTs, uint64_t& endTs, int cpuInfo[4], uint32_t& aux)
+{
+  __cpuid(cpuInfo, 0);
+  startTs = __rdtsc();
+  __cpuid(cpuInfo, 0);
+  endTs = __rdtscp(&aux);
+  __cpuid(cpuInfo, 0);
+  startTs = __rdtsc();
+}
+
+//------------------------------------------------------------------------------
+#else
+static inline
+void
+warmup(uint64_t& startTs, uint64_t& endTs, int cpuInfo[4], uint32_t& aux)
+{
+  __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
+  startTs = __rdtsc();
+  __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
+  endTs = __rdtscp(&aux);
+  __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
+  startTs = __rdtsc();
+}
+#endif
+
+//------------------------------------------------------------------------------
 template <typename Func>
-Results
+static Results
 runBenchmark(Func _funcToBenchmark)
 {
   Results results;
@@ -123,16 +207,10 @@ runBenchmark(Func _funcToBenchmark)
   uint64_t start = 0;
   uint64_t end   = 0;
 
+  unsigned long irqFlags;
   uint32_t aux;
   int cpuInfo[4];
-
-  // Warm-up
-  __cpuid(cpuInfo, 0);
-  start = __rdtsc();
-  __cpuid(cpuInfo, 0);
-  end = __rdtscp(&aux);
-  __cpuid(cpuInfo, 0);
-  start = __rdtsc();
+  warmup(start, end, cpuInfo, aux);
 
   // Run benchmarks
   for (size_t i = 0; i < NUM_ROUNDS; ++i)
@@ -142,13 +220,11 @@ runBenchmark(Func _funcToBenchmark)
     ReturnValues values;
     for (size_t j = 0; j < NUM_SAMPLES; ++j)
     {
-      __cpuid(cpuInfo, 0);    // Halt until all previous instructions completed
-      start = __rdtsc();
+      startTiming(start, cpuInfo, irqFlags);
 
       _funcToBenchmark(values);
 
-      end = __rdtscp(&aux);    // Timestamp taken only after benchmark done
-      __cpuid(cpuInfo, 0);    // Prevent further execution until timestamp taken
+      stopTiming(end, cpuInfo, aux, irqFlags);
 
       // store results
       for (size_t r = 0; r < Randocha::NUM_GENERATED; ++r)
@@ -176,7 +252,7 @@ calculateMean(std::vector<uint64_t> values)
 }
 
 //------------------------------------------------------------------------------
-uint64_t
+static uint64_t
 calculateVariance(
   std::vector<uint64_t> values,
   uint64_t meanValue,
@@ -203,14 +279,14 @@ calculateVariance(
 }
 
 //------------------------------------------------------------------------------
-uint64_t
+static uint64_t
 calculateVariance(std::vector<uint64_t> values, bool fromPartialSamples = false)
 {
   return calculateVariance(values, calculateMean(values), fromPartialSamples);
 }
 
 //------------------------------------------------------------------------------
-void
+static void
 calculateVarianceInfo(Results& results)
 {
   for (size_t i = 0; i < NUM_ROUNDS; ++i)
@@ -302,7 +378,7 @@ calculateVarianceInfo(Results& results)
 }
 
 //------------------------------------------------------------------------------
-void
+static void
 printResults(Results& results)
 {
   for (size_t i = 0; i < NUM_ROUNDS; ++i)
@@ -318,7 +394,7 @@ printResults(Results& results)
 }
 
 //------------------------------------------------------------------------------
-void
+static void
 printSummary(Results& results)
 {
   std::cout << "Benchmark Results:\n";
