@@ -9,13 +9,15 @@
 #include <cassert>
 #include <cmath>
 
-#ifndef _MSC_VER
-//#  include <linux/module.h>
-//#  include <linux/kernel.h>
-//#  include <linux/init.h>
-//#  include <linux/hardirq.h>
-//#  include <linux/preempt.h>
-//#  include <linux/sched.h>
+// Kernel Module
+// allows disabling preemption and interrupts during benchmarking
+#if AS_KERNEL_MODULE
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/hardirq.h>
+#include <linux/preempt.h>
+#include <linux/sched.h>
 #endif
 
 //------------------------------------------------------------------------------
@@ -135,9 +137,10 @@ startTiming(uint64_t& startTs, int cpuInfo[4], unsigned long irqFlags)
 {
   UNREFERENCED_PARAMETER(irqFlags);
 
-  // TODO: disable this only in WSL
-  // preempt_disable();
-  // raw_local_irq_save(irqFlags);
+#if AS_KERNEL_MODULE
+  preempt_disable();
+  raw_local_irq_save(irqFlags);
+#endif
 
   // Halt until all previous instructions completed
   __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
@@ -170,9 +173,10 @@ stopTiming(
   // Prevent further execution until timestamp taken
   __asm__ __volatile__("cpuid" : : : "rax", "rbx", "rcx", "rdx");
 
-  // TODO: disable this only in WSL
-  // raw_local_irq_restore(irqFlags);
-  // preempt_enable();
+#if AS_KERNEL_MODULE
+  raw_local_irq_restore(irqFlags);
+  preempt_enable();
+#endif
 }
 #endif
 
@@ -511,4 +515,20 @@ main()
   return 0;
 }
 
+//------------------------------------------------------------------------------
+#if AS_KERNEL_MODULE
+static int __init
+bench_start(void)
+{
+  return main();
+}
+
+static void __exit
+bench_end(void)
+{
+  printk(KERN_INFO "Benchmark Module exiting\n");
+}
+module_init(bench_start);
+module_exit(bench_end);
+#endif
 //------------------------------------------------------------------------------
