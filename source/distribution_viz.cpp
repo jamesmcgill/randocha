@@ -1,6 +1,7 @@
 #include "randocha.h"
 #include "rand_sse.h"
 #include "rand_tea.h"
+#include "rand_mt.h"
 
 #if _MSC_VER
 #define STBI_MSC_SECURE_CRT
@@ -109,6 +110,22 @@ generateTea(Results& results)
 
 //------------------------------------------------------------------------------
 void
+generateMT(Results& results)
+{
+  constexpr size_t numSamples = NUM_FLOATS / RandMT::NUM_GENERATED;
+  static_assert(
+    (NUM_FLOATS % RandMT::NUM_GENERATED) == 0,
+    "Please ensure to use an exact multiple of the number generated per call");
+
+  RandMT rand;
+  for (size_t i = 0; i < numSamples; ++i)
+  {
+    results[i] = rand.generate();
+  }
+}
+
+//------------------------------------------------------------------------------
+void
 vizDistribution(Results& results)
 {
   std::vector<int> distributionCounts(VIZ_RESOLUTION);
@@ -190,6 +207,13 @@ main()
   generateTea(results);
   vizDistribution(results);
   saveImage(results, "rand_tea.bmp");
+
+  std::cout << "\n\n";
+  std::cout << "Mersenne Twister\n";
+  std::cout << "================\n";
+  generateMT(results);
+  vizDistribution(results);
+  saveImage(results, "rand_mt.bmp");
 
   return 0;
 }
