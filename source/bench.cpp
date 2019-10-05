@@ -1,6 +1,7 @@
 #include "randocha.h"
 #include "rand_sse.h"
 #include "rand_tea.h"
+#include "rand_mt.h"
 
 #include <iostream>
 #include <vector>
@@ -483,7 +484,7 @@ main()
   calculateVarianceInfo(sseResults);
   std::cout << "\n\n";
   std::cout << "SSE\n";
-  std::cout << "========\n";
+  std::cout << "===\n";
   // printResults(sseResults);
   printSummary(sseResults);
 
@@ -508,9 +509,30 @@ main()
   calculateVarianceInfo(teaResults);
   std::cout << "\n\n";
   std::cout << "TEA\n";
-  std::cout << "========\n";
+  std::cout << "===\n";
   // printResults(teaResults);
   printSummary(teaResults);
+
+  static_assert(
+    Randocha::NUM_GENERATED == RandMT::NUM_GENERATED * 8,
+    "MT Benchmark only generates 1 value, need to call repeatedly to match required output size");
+  RandMT randMtGen;
+  Results mtResults = runBenchmark([&randMtGen](ReturnValues& values) {
+    values[0] = randMtGen.generate();
+    values[1] = randMtGen.generate();
+    values[2] = randMtGen.generate();
+    values[3] = randMtGen.generate();
+    values[4] = randMtGen.generate();
+    values[5] = randMtGen.generate();
+    values[6] = randMtGen.generate();
+    values[7] = randMtGen.generate();
+  });
+  calculateVarianceInfo(mtResults);
+  std::cout << "\n\n";
+  std::cout << "Mersenne Twister\n";
+  std::cout << "================\n";
+  printResults(mtResults);
+  printSummary(mtResults);
 
   return 0;
 }
