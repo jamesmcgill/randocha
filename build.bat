@@ -1,11 +1,12 @@
 @echo off
 ::##############################################################################
 :: Incrementally build and run tests
-:: Expects build-generate.bat to be run beforehand
 ::##############################################################################
 
 :: Configuration variables. You may edit these.
 set BUILD_TARGET="Release"
+set EXE_NAME="distribution_viz"
+
 
 
 ::##############################################################################
@@ -14,16 +15,21 @@ set BUILD_TARGET="Release"
 set BASE_PATH=%~dp0
 set BUILD_PATH=%BASE_PATH%build\
 
-IF EXIST %BUILD_PATH%CMakeCache.txt GOTO Build
+:: Generate the project cache (if required)
+if exist %BUILD_PATH%CMakeCache.txt goto SKIP_CMAKE
+echo.
 echo Missing CMakeCache.txt. Running build-generate.bat
 call %BASE_PATH%build-generate.bat
+:SKIP_CMAKE
 
-:Build
+:: Build and run our code
 pushd %BUILD_PATH%
-cmake --build . --config %BUILD_TARGET%
+echo.
+call cmake --build . --config %BUILD_TARGET% && (
+.\%BUILD_TARGET%\%EXE_NAME%.exe
+)
 popd
 
-echo[
+echo.
 echo Done!
 echo -----
-:End
