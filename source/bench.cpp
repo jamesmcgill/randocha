@@ -531,7 +531,7 @@ main()
   std::cout << "\n\n";
   std::cout << "Mersenne Twister\n";
   std::cout << "================\n";
-  printResults(mtResults);
+  //printResults(mtResults);
   printSummary(mtResults);
 
   return 0;
